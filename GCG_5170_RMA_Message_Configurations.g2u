@@ -1,0 +1,268 @@
+Program.Sub.Preflight.Start
+Program.Sub.Preflight.End
+
+Program.Sub.Main.Start
+'GCG_5170_RMA_Message_Configurations.g2u
+'Trey Seddon
+'8/30/2018
+'For PKC
+
+'30841	RMA Receipt post save
+'34800	RMA complete
+'Switch M will be the set up that adds the events, parameters, and presets
+
+F.Intrinsic.Control.If(V.Caller.Switches, =, "M")
+	F.Intrinsic.Control.CallSub(SetUpConfigurations)
+F.Intrinsic.Control.Else
+	F.Intrinsic.Control.SelectCase(V.Caller.Hook)
+		F.Intrinsic.Control.Case(30841)
+			F.Intrinsic.Control.CallSub(RMAReceiptHook)
+			
+		F.Intrinsic.Control.Case(34800)
+			F.Intrinsic.Control.CallSub(RMACompleteHook)
+	F.Intrinsic.Control.EndSelect
+F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.End
+Program.Sub.Main.End
+
+Program.Sub.SetUpConfigurations.Start
+'Here we set up the event, along with the parameters it will have to filter by.
+'This only needs to run ONCE
+'Then we just pass these parameters to the message configurator from the desired hooks,
+'and it should take care of the rest
+
+'Set up RMA receipt event
+V.Local.iParameterID.Declare(Long)
+V.Local.iEvent.Declare(Long)
+V.Local.iEventParameter.Declare(Long)
+V.Local.iNotesParameterID.Declare(Long)
+V.Local.iServiceParameterID.Declare(Long)
+V.Local.iQTYID.Declare(Long)
+V.Local.iQTYDiffID.Declare(Long)
+V.Local.iQTYRecvdID.Declare(Long)
+
+'MSG-CUST 			27
+'MSG-ORDER			63
+'MSG-ORDER-LINE		64
+'MSG-PART			70
+'MSG-QTY			94
+'MSG-QTY-DIFF		96
+'MSG-QTY-RECVD		100
+'MSG-RMA			116
+'MSG-REV			115
+'MSG-USER			144
+'MSG-DESC			37
+'MSG-INVOICE		51
+'MSG_CUST_NAME		28
+
+F.Global.Messaging.InternalMessageCreateEvent(0, 0, "RMA Receipts", V.Local.iEvent)
+F.Global.Messaging.InternalMessageAddEventParameter(V.Local.iEvent, 27, V.Local.iEventParameter)
+F.Global.Messaging.InternalMessageAddEventParameter(V.Local.iEvent, 63, V.Local.iEventParameter)
+F.Global.Messaging.InternalMessageAddEventParameter(V.Local.iEvent, 70, V.Local.iEventParameter)
+F.Global.Messaging.InternalMessageAddEventParameter(V.Local.iEvent, 96, V.Local.iEventParameter)
+F.Global.Messaging.InternalMessageAddEventParameter(V.Local.iEvent, 100, V.Local.iEventParameter)
+F.Global.Messaging.InternalMessageAddEventParameter(V.Local.iEvent, 115, V.Local.iEventParameter)
+F.Global.Messaging.InternalMessageAddEventParameter(V.Local.iEvent, 116, V.Local.iEventParameter)
+F.Global.Messaging.InternalMessageAddEventParameter(V.Local.iEvent, 64, V.Local.iEventParameter)
+F.Global.Messaging.InternalMessageAddEventParameter(V.Local.iEvent, 144, V.Local.iEventParameter)
+F.Global.Messaging.InternalMessageAddEventParameter(V.Local.iEvent, 37, V.Local.iEventParameter)
+F.Global.Messaging.InternalMessageAddEventParameter(V.Local.iEvent, 28, V.Local.iEventParameter)
+F.Global.Messaging.InternalMessageAddEventParameter(V.Local.iEvent, 94, V.Local.iEventParameter)
+F.Global.Messaging.InternalMessageAddEventParameter(V.Local.iEvent, 51, V.Local.iEventParameter)
+
+F.Global.Messaging.InternalMessageCreateParameter("MSG-NOTES", 364300, 0, 0, V.Local.iNotesParameterID)
+F.Global.Messaging.InternalMessageAddEventParameter(V.Local.iEvent, V.Local.iNotesParameterID, V.Local.iEventParameter)
+
+F.Global.Messaging.InternalMessageCreateParameter("MSG-SERVICE-REQ", 569500, 0, 0, V.Local.iServiceParameterID)
+F.Global.Messaging.InternalMessageAddEventParameter(V.Local.iEvent, V.Local.iServiceParameterID, V.Local.iEventParameter)
+
+'Create Preset
+V.Local.sMessage.Declare(String)
+V.Local.iConfigID.Declare(Long)
+V.Local.sMessage.Set("<<<MSG-RMA>>>,<<<MSG-CUST>>>,<<<MSG-CUST-NAME>>>,<<<MSG-PART>>>,<<<MSG-DESC>>>,<<<MSG-QTY-RECVD>>>")
+F.Intrinsic.String.Replace(V.Local.sMessage, ",", V.Ambient.NewLine, V.Local.sMessage)
+F.Global.Messaging.InternalMessageCreateConfigurationPreset("",,"RMA Receipt", V.Local.iEvent, True, True, "RMA Receipt", V.Local.sMessage, V.Local.iConfigID)
+
+'Set up RMA action event
+F.Global.Messaging.InternalMessageCreateEvent(0, 0, "RMA Complete", V.Local.iEvent)
+F.Global.Messaging.InternalMessageAddEventParameter(V.Local.iEvent, 27, V.Local.iEventParameter)
+F.Global.Messaging.InternalMessageAddEventParameter(V.Local.iEvent, 63, V.Local.iEventParameter)
+F.Global.Messaging.InternalMessageAddEventParameter(V.Local.iEvent, 70, V.Local.iEventParameter)
+F.Global.Messaging.InternalMessageAddEventParameter(V.Local.iEvent, 115, V.Local.iEventParameter)
+F.Global.Messaging.InternalMessageAddEventParameter(V.Local.iEvent, 116, V.Local.iEventParameter)
+F.Global.Messaging.InternalMessageAddEventParameter(V.Local.iEvent, 64, V.Local.iEventParameter)
+F.Global.Messaging.InternalMessageAddEventParameter(V.Local.iEvent, 144, V.Local.iEventParameter)
+F.Global.Messaging.InternalMessageAddEventParameter(V.Local.iEvent, 37, V.Local.iEventParameter)
+F.Global.Messaging.InternalMessageAddEventParameter(V.Local.iEvent, 28, V.Local.iEventParameter)
+F.Global.Messaging.InternalMessageAddEventParameter(V.Local.iEvent, 51, V.Local.iEventParameter)
+
+F.Global.Messaging.InternalMessageAddEventParameter(V.Local.iEvent, V.Local.iServiceParameterID, V.Local.iEventParameter)
+F.Global.Messaging.InternalMessageAddEventParameter(V.Local.iEvent, V.Local.iNotesParameterID, V.Local.iEventParameter)
+
+F.Global.Messaging.InternalMessageCreateParameter("MSG-TOT-QTY-RECVD", 491600, 1, 0, V.Local.iParameterID)
+F.Global.Messaging.InternalMessageAddEventParameter(V.Local.iEvent, V.Local.iParameterID, V.Local.iEventParameter)
+
+F.Global.Messaging.InternalMessageCreateParameter("MSG-TOT-QTY-SVCD", 495700, 1, 0, V.Local.iParameterID)
+F.Global.Messaging.InternalMessageAddEventParameter(V.Local.iEvent, V.Local.iParameterID, V.Local.iEventParameter)
+
+F.Global.Messaging.InternalMessageCreateParameter("MSG-ACTIONS", 5600, 0, 0, V.Local.iParameterID)
+F.Global.Messaging.InternalMessageAddEventParameter(V.Local.iEvent, V.Local.iParameterID, V.Local.iEventParameter)
+
+F.Global.Messaging.InternalMessageCreateParameter("MSG-LINE-NOTES", 330501, 0, 0, V.Local.iParameterID)
+F.Global.Messaging.InternalMessageAddEventParameter(V.Local.iEvent, V.Local.iParameterID, V.Local.iEventParameter)
+
+'Create Preset
+V.Local.sMessage.Set("<<<MSG-RMA>>>,<<<MSG-CUST>>>,<<<MSG-CUST-NAME>>>,<<<MSG-PART>>>,<<<MSG-DESC>>>,<<<MSG-TOT-QTY-SVCD>>>,<<<MSG-ACTIONS>>>,<<<MSG-NOTES>>>")
+F.Intrinsic.String.Replace(V.Local.sMessage, ",", V.Ambient.NewLine, V.Local.sMessage)
+F.Global.Messaging.InternalMessageCreateConfigurationPreset("",,"RMA Complete", V.Local.iEvent, True, True, "RMA Complete", V.Local.sMessage, V.Local.iConfigID)
+Program.Sub.SetUpConfigurations.End
+
+Program.Sub.RMAReceiptHook.Start
+'Here we set the parameters and pass them to the message configurator
+'For when parts are received to an RMA
+
+'QTY-TO-RET		000104
+'QTY-RECD		000105
+'SERVICE-REQ	000106
+'PART			000107
+'REV			000108
+'DESC			000109
+'RMA			000125
+'RMA-ITEM		000101
+
+'Set the variables to pass to the message configurator
+V.Local.iTemp.Declare(Long)
+F.Global.General.SetPassedDataElement("MSG-EVENT-NAME", "RMA Receipts")
+F.Global.General.SetPassedDataElement("MSG-PART", V.Passed.000107.Trim)
+F.Global.General.SetPassedDataElement("MSG-REV", V.Passed.000108.Trim)
+V.Local.iTemp.Set(V.Passed.000105.Trim)
+F.Global.General.SetPassedDataElement("MSG-QTY-RECVD", V.Local.iTemp)
+F.Global.General.SetPassedDataElement("MSG-RMA", V.Passed.000125.Trim)
+F.Global.General.SetPassedDataElement("MSG-DESC", V.Passed.000109.Trim)
+F.Global.General.SetPassedDataElement("MSG-USER", V.Caller.User)
+V.Local.iTemp.Set(V.Passed.000104.Trim)
+F.Global.General.SetPassedDataElement("MSG-QTY", V.Local.iTemp)
+F.Global.General.SetPassedDataElement("MSG-SERVICE-REQ", V.Passed.000106.Trim)
+V.Local.iDiff.Declare(Long)
+F.Intrinsic.Math.Sub(V.Passed.000104.Trim, V.Passed.000105.Trim, V.Local.iDiff)
+F.Global.General.SetPassedDataElement("MSG-QTY-DIFF", V.Local.iDiff)
+
+'Get extra information not present in the hook
+F.ODBC.Connection!Conn.OpenCompanyConnection
+V.Local.sSQL.Declare(String)
+V.Local.sRet.Declare(String)
+F.Intrinsic.String.Build("select ORDER_NO, INVOICE, NAME_CUSTOMER, CUSTOMER from V_RMA_HEADER where RMA_ID = '{0}'", V.Passed.000125.Trim, V.Local.sSQL)
+F.ODBC.Connection!Conn.ExecuteAndReturn(V.Local.sSQL, V.Local.sRet)
+
+F.Intrinsic.Control.If(V.Ambient.ExecuteAndReturnEOF, =, False)
+	F.Intrinsic.String.Split(V.Local.sRet, "*!*", V.Local.sRet)
+	'0	ORDER_NO
+	'1	INVOICE
+	'2	NAME_CUSTOMER
+	'3	CUSTOMER
+	F.Global.General.SetPassedDataElement("MSG-ORDER", V.Local.sRet(0).Trim)
+	F.Global.General.SetPassedDataElement("MSG-INVOICE", V.Local.sRet(1).Trim)
+	F.Global.General.SetPassedDataElement("MSG-CUST-NAME", V.Local.sRet(2).Trim)
+	F.Global.General.SetPassedDataElement("MSG-CUST", V.Local.sRet(3).Trim)
+F.Intrinsic.Control.EndIf
+
+'Get the notes for the RMA line from RMA_LN_SVRQ_NOTES
+F.Intrinsic.String.Build("select TEXT from V_RMA_LN_SVRQ_NOTES where RMA_ID = '{0}' and LINE = {1}", V.Passed.000125.Trim, V.Passed.000101, V.Local.sSQL)
+F.ODBC.Connection!Conn.ExecuteAndReturn(V.Local.sSQL, V.Local.sRet)
+F.Intrinsic.Control.If(V.Ambient.ExecuteAndReturnEOF, =, False)
+	F.Global.General.SetPassedDataElement("MSG-NOTES", V.Local.sRet.Trim)
+F.Intrinsic.Control.EndIf
+
+F.ODBC.Connection!Conn.Close
+'Call message configurator
+V.Local.iPID.Declare(Long)
+V.Local.sFilePath.Declare(String)
+F.Intrinsic.String.Build("{0}\GSS_MSG_Process.gas", V.Caller.GasDir, V.Local.sFilePath)
+F.Global.General.CallAsyncGAS(V.Local.sFilePath, V.Local.iPID)
+Program.Sub.RMAReceiptHook.End
+
+Program.Sub.RMACompleteHook.Start
+'Here we set the parameters and pass them to the message configurator
+'For when an RMA is completed
+
+'LINE			000002
+'PART			000003
+'REV			000004
+'DESC			000025
+'TOT-QTY-RECD	000066
+'TOT-QTY-SVCD	000068
+'RMA-LINE		000069
+'SALES-ORDER	000074
+'RMA			000125
+
+V.Local.iTemp.Declare(Long)
+F.Global.General.SetPassedDataElement("MSG-EVENT-NAME", "RMA Complete")
+F.Global.General.SetPassedDataElement("MSG-DESC", V.Passed.000025.Trim)
+F.Global.General.SetPassedDataElement("MSG-ORDER", V.Passed.000074.Trim)
+F.Global.General.SetPassedDataElement("MSG-ORDER-LINE", V.Passed.000002.Trim)
+F.Global.General.SetPassedDataElement("MSG-PART", V.Passed.000003.Trim)
+V.Local.iTemp.Set(V.Passed.000068.Trim)
+F.Global.General.SetPassedDataElement("MSG-TOT-QTY-SVCD",V.Local.iTemp)
+V.Local.iTemp.Set(V.Passed.000066.Trim)
+F.Global.General.SetPassedDataElement("MSG-TOT-QTY-RECVD", V.Local.iTemp)
+F.Global.General.SetPassedDataElement("MSG-REV", V.Passed.000004.Trim)
+F.Global.General.SetPassedDataElement("MSG-RMA", V.Passed.000125.Trim)
+F.Global.General.SetPassedDataElement("MSG-USER", V.Caller.User)
+
+'Get extra information not present in the hook
+F.ODBC.Connection!Conn.OpenCompanyConnection
+V.Local.sSQL.Declare(String)
+V.Local.sRet.Declare(String)
+F.Intrinsic.String.Build("select INVOICE, NAME_CUSTOMER, CUSTOMER from V_RMA_HIST_HEADER where RMA_ID = '{0}'", V.Passed.000125.Trim, V.Local.sSQL)
+F.ODBC.Connection!Conn.ExecuteAndReturn(V.Local.sSQL, V.Local.sRet)
+
+F.Intrinsic.Control.If(V.Ambient.ExecuteAndReturnEOF, =, False)
+	F.Intrinsic.String.Split(V.Local.sRet, "*!*", V.Local.sRet)
+	'0	INVOICE
+	'1	NAME_CUSTOMER
+	'2	CUSTOMER
+	F.Global.General.SetPassedDataElement("MSG-INVOICE", V.Local.sRet(0).Trim)
+	F.Global.General.SetPassedDataElement("MSG-CUST-NAME", V.Local.sRet(1).Trim)
+	F.Global.General.SetPassedDataElement("MSG-CUST", V.Local.sRet(2).Trim)
+F.Intrinsic.Control.EndIf
+
+'Get service requested notes
+F.Intrinsic.String.Build("select RTRIM(TEXT) as TEXT from V_RMA_LNSVRQ_H_NOTE where RMA_ID = '{0}' and LINE = {1}", V.Passed.000125.Trim, V.Passed.000069, V.Local.sSQL)
+F.ODBC.Connection!Conn.ExecuteAndReturn(V.Local.sSQL, V.Local.sRet)
+F.Intrinsic.Control.If(V.Ambient.ExecuteAndReturnEOF, =, False)
+	F.Intrinsic.String.Replace(V.Local.sRet, "#$#", V.Ambient.NewLine, V.Local.sRet)
+	F.Global.General.SetPassedDataElement("MSG-LINE-NOTES", V.Local.sRet.Trim)
+F.Intrinsic.Control.EndIf
+
+'Get service performed notes
+F.Intrinsic.String.Build("select RTRIM(TEXT) from V_RMA_LNSVPF_H_NOTE where RMA_ID = '{0}' and LINE = {1}", V.Passed.000125.Trim, V.Passed.000069, V.Local.sSQL)
+F.ODBC.Connection!Conn.ExecuteAndReturn(V.Local.sSQL, V.Local.sRet)
+F.Intrinsic.Control.If(V.Ambient.ExecuteAndReturnEOF, =, False)
+F.Intrinsic.String.Replace(V.Local.sRet, "#$#", V.Ambient.NewLine, V.Local.sRet)
+	F.Global.General.SetPassedDataElement("MSG-NOTES", V.Local.sRet.Trim)
+F.Intrinsic.Control.EndIf
+
+'Get Actions
+F.Intrinsic.String.Build("select RTRIM(ACTION_TAKEN) as ACTION_TAKEN from V_RMA_H_SVC_PERFORM where RMA_ID = '{0}' and RMA_LINE = {1}", V.Passed.000125.Trim, V.Passed.000069, V.Local.sSQL)
+F.ODBC.Connection!Conn.ExecuteAndReturn(V.Local.sSQL, V.Local.sRet)
+F.Intrinsic.Control.If(V.Ambient.ExecuteAndReturnEOF, =, False)
+F.Intrinsic.String.Replace(V.Local.sRet, "#$#", V.Ambient.NewLine, V.Local.sRet)
+	F.Global.General.SetPassedDataElement("MSG-ACTIONS", V.Local.sRet.Trim)
+F.Intrinsic.Control.EndIf
+
+'Get service performed
+F.Intrinsic.String.Build("select RTRIM(SERVICE_PERFORMED) as SERVICE_PERFORMED from V_RMA_H_SVC_PERFORM where RMA_ID = '{0}' and RMA_LINE = {1}", V.Passed.000125.Trim, V.Passed.000069, V.Local.sSQL)
+F.ODBC.Connection!Conn.ExecuteAndReturn(V.Local.sSQL, V.Local.sRet)
+F.Intrinsic.Control.If(V.Ambient.ExecuteAndReturnEOF, =, False)
+F.Intrinsic.String.Replace(V.Local.sRet, "#$#", V.Ambient.NewLine, V.Local.sRet)
+	F.Global.General.SetPassedDataElement("MSG-SERVICE-REQ", V.Local.sRet.Trim)
+F.Intrinsic.Control.EndIf
+
+F.ODBC.Connection!Conn.Close
+'Call message configurator
+V.Local.iPID.Declare(Long)
+V.Local.sFilePath.Declare(String)
+F.Intrinsic.String.Build("{0}\GSS_MSG_Process.gas", V.Caller.GasDir, V.Local.sFilePath)
+F.Global.General.CallAsyncGAS(V.Local.sFilePath, V.Local.iPID)
+Program.Sub.RMACompleteHook.End
